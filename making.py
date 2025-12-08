@@ -33,7 +33,7 @@ def Makedf():
     df3 = df3.drop_duplicates(subset='전화번호')
     df3['전화번호'] = df3['전화번호'].apply(format_phone_number)
 
-    return df1, df2, df3
+    return df1, df3
 
 
 def format_phone_number(phone_number) -> str:
