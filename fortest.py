@@ -57,7 +57,16 @@ recent_number_diff = (
     .dropna()
 )
 
+# 이름 기준으로 가장 최근(날짜차이 최소값) 1개만 남기기
+recent_number_diff = (
+    recent_number_diff
+    .sort_values(by='날짜차이')      # 날짜차이 오름차순 → 가장 최근이 위로
+    .drop_duplicates(subset='이름', keep='first')  # 같은 이름은 첫 번째(가장 최근)만 유지
+)
+
+
 print(recent_number_diff)
+print()
 print(len(recent_number_diff))
 
 # -----------------------------
