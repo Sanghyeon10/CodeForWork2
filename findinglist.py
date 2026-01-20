@@ -95,7 +95,7 @@ pd.set_option('display.max_colwidth', None)
 
 
 df1, df3 = making.Makedf()
-
+namelist = making.namelist
 
 
 
@@ -114,18 +114,27 @@ result = (
     .reset_index()
 )
 
-# print(result)
+# print(result.columns)
+# print(namelist)
+
+namelist_phones=[]
+
+for name in namelist:
+    for i in range(len(df3)):
+        if df3.loc[df3.index[i], '이름'] == name:
+            phone = df3.loc[df3.index[i], '전화번호']
+            namelist_phones.append(phone)
+            # print(phone)
 
 for i in range(len(result.index)):
     # 보관재촉 문자 조건달성?.
 
-    if has_recent_three(result.loc[result.index[i],'전송일자']):
+    if has_recent_three(result.loc[result.index[i],'전송일자']) and (result.loc[result.index[i],'수신번호'] in namelist_phones) :
         new_row = {
             "날짜": datetime.datetime.now().strftime("%Y-%m-%d"),
             "수신번호": result.loc[result.index[i],'수신번호'],
             "이름":getName(result.loc[result.index[i],'수신번호'],df1,df3 )
         }
-
         Save_file(new_row)
 
     else:

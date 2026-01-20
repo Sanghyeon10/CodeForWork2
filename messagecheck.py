@@ -1,116 +1,126 @@
 import pandas as pd
-import os
 import re
 import datetime
-import findinglist
 import making
+import findinglist
 
 
-
-# 행과 열 제한 해제
+# 행 열 제한 해제
 pd.set_option('display.max_rows', None)
 pd.set_option('display.max_columns', None)
 pd.set_option('display.width', None)
-pd.set_option('display.max_colwidth', None)
-
 
 df1, df3 = making.Makedf()
 
+# -----------------------------
+# 📌 문자 이력 출력 (iterrows → itertuples)
+# -----------------------------
+for row in df3.itertuples():
+    name = row.이름
+    phone = row.전화번호
 
-# 문자 이력 확인
-for i in range(len(df3.index)):
-    print(df3.loc[df3.index[i], '이름'])
-    for j in range(len(df1)):
-        if df1.loc[df1.index[j], '수신번호'] == df3.loc[df3.index[i], '전화번호']:
-            if df1.loc[df1.index[j], '날짜차이'] <= 5:
-                print('너무 짧아')
-            print(f"{df1.loc[df1.index[j], '전송일자'].month}/{df1.loc[df1.index[j], '전송일자'].day} "
-                  f"{df1.loc[df1.index[j], '날짜차이']} Days")
-            print(df1.loc[df1.index[j], '문자내용'])
-            if df1.loc[df1.index[j], '결과'] != '성공':
-                print('전송실패!!')
-            print()
+    print(name)
+
+    history = df1[df1['수신번호'] == phone]
+
+    for h in history.itertuples():
+        if h.날짜차이 <= 5:
+            print("너무 짧아")
+
+        send = h.전송일자
+        print(f"{send.month}/{send.day} {h.날짜차이} Days")
+        print(h.문자내용)
+
+        if h.결과 != '성공':
+            print("전송실패!!")
+        print()
     print()
 
-# 이름 리스트 로드
-namelist = []
+# -----------------------------
+# 📌 이름 리스트 로드
+# -----------------------------
 with open('namelist.txt', 'r', encoding="utf-8") as f:
-    for line in f:
-        namelist += [word for word in re.split(r'\s|,|\.', line) if word]
+    namelist = [word for line in f for word in re.split(r'\s|,|\.', line) if word]
 
 print(namelist)
 print(len(namelist))
 print()
 
-# 최근 5일 이내 문자 수신자 목록 출력
-recent_df = df1[df1['날짜차이'] >=0 ]
-recent_numbers = recent_df['수신번호'].unique()
+# -----------------------------
+# 📌 최근 문자 수신자 목록 (벡터 기반)
+# -----------------------------
+recent_df = df1[df1['날짜차이'] >= 0]
 
-
-print("\n✅ 최근  문자 수신자 전화번호 + 날짜차이 목록:")
-recent_number_diff = recent_df[['수신번호', '날짜차이']].drop_duplicates()
-# print(recent_number_diff)
-# 전화번호 기준으로 df3와 조인 (df3['전화번호']와 recent_number_diff['수신번호'])
-recent_number_diff = recent_number_diff.merge(
-    df3[['이름', '전화번호']],
-    left_on='수신번호',
-    right_on='전화번호',
-    how='left'
+recent_number_diff = (
+    recent_df[['수신번호', '날짜차이']]
+    .drop_duplicates()
+    .merge(df3[['이름', '전화번호']], left_on='수신번호', right_on='전화번호')
+    .drop(columns=['전화번호'])
+    .dropna()
 )
 
-# '전화번호' 컬럼은 중복이므로 제거
-recent_number_diff.drop(columns='전화번호', inplace=True)
-recent_number_diff = recent_number_diff.dropna()
-# 결과 출력
-# print(recent_number_diff)
+# 이름 기준으로 가장 최근(날짜차이 최소값) 1개만 남기기
+recent_number_diff = (
+    recent_number_diff
+    .sort_values(by='날짜차이')      # 날짜차이 오름차순 → 가장 최근이 위로
+    .drop_duplicates(subset='이름', keep='first')  # 같은 이름은 첫 번째(가장 최근)만 유지
+)
 
-recent_number_diff = recent_number_diff.drop_duplicates(subset='이름')
+
 print(recent_number_diff)
+print()
 print(len(recent_number_diff))
 
+# -----------------------------
+# 📌 namelist → 전화번호 매핑 (merge 기반)
+# -----------------------------
+namelist_df = pd.DataFrame({'이름': namelist})
+namelist_df = namelist_df.merge(df3[['이름', '전화번호']], how='left')
+namelist_df['전화번호'] = namelist_df['전화번호'].fillna("정보 없음")
 
+namelist_phones = namelist_df['전화번호'].tolist()
 
+print("\n📋 namelist 전화번호 목록:")
+for phone in namelist_phones:
+    print(phone)
 
-# namelist에 포함된 이름의 전화번호와 문자 발송 이력 출력
-print("\n📋 namelist에 있는 이름들의 전화번호:")
-namelist_phones = []
+# -----------------------------
+# 📌 namelist 문자 이력 + log 통합 출력
+# -----------------------------
+print("\n📋 namelist 통합 문자 이력 + log 기록:")
 
-for name in namelist:
-    for i in range(len(df3)):
-        if df3.loc[df3.index[i], '이름'] == name:
-            phone = df3.loc[df3.index[i], '전화번호']
-            namelist_phones.append(phone)
-            print(phone)
+log = pd.read_excel("log.xlsx")
 
-print("\n📋 namelist에 있는 이름들의 전화번호 + 날짜차이:")
+for row in namelist_df.itertuples():
+    name = row.이름
+    phone = row.전화번호
 
-for name in namelist:
-    # df3에서 이름으로 검색
-    matched = df3[df3['이름'] == name]
+    if phone == "정보 없음":
+        print(f"{name} | 정보 없음")
+        continue
 
-    if not matched.empty:
-        phone = matched.iloc[0]['전화번호']
-        # 문자 이력에서 해당 전화번호에 대한 이력 필터
-        history = df1[df1['수신번호'] == phone]
+    # 문자 이력(df1)
+    history = df1[df1['수신번호'] == phone]
 
-        if not history.empty:
-            recent = history.sort_values(by='전송일자', ascending=False).iloc[0]
-            days_diff = recent['날짜차이']
-            print(f" {name},  {phone},  {days_diff}")
-        else:
-            print(f"이름: {name}, 전화번호: {phone}, 날짜차이: 문자 발송 이력 없음")
+    if history.empty:
+        msg_info = "문자 이력 없음"
     else:
-        print(f"이름: {name}, 전화번호: 없음, 날짜차이: 정보 없음")
+        recent = history.sort_values(by='전송일자', ascending=False).iloc[0]
+        msg_info = f"문자: {recent['날짜차이']}일 전"
+
+    # 로그 파일
+    log_match = log[log['수신번호'].astype(str) == str(phone)]
+    # print(log_match)
+    if log_match.empty:
+        log_info = "로그 없음"
+    else:
+        if '날짜' in log_match.columns:
+            log_date = log_match.iloc[0]['날짜']
+            log_info = f"로그: {log_date}"
+        else:
+            log_info = "로그 기록 있음(날짜 없음)"
+
+    print(f"{name} | {phone} | {msg_info} | {log_info}")
 
 
 findinglist
-log = pd.read_excel("log.xlsx")
-
-for i in namelist_phones:
-    mask = log['수신번호'].str.contains(i, na=False)
-
-    if mask.any():
-        print()
-        # print(log[mask].iloc[0])    # ← 일치하는 행 출력
-    else:
-        print()

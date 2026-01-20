@@ -45,3 +45,9 @@ def format_phone_number(phone_number) -> str:
     else:
         print("올바른 11자리 전화번호를 입력하세요.")
         return phone_number
+
+
+
+
+with open('namelist.txt', 'r', encoding="utf-8") as f:
+    namelist = [word for line in f for word in re.split(r'\s|,|\.', line) if word]
