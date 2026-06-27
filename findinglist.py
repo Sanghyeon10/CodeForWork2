@@ -102,7 +102,7 @@ namelist = making.namelist
 # print(df1)
 
 # 1) 문자내용에 '보관'이 포함된 행 필터링
-filtered = df1[df1['문자내용'].str.contains('세탁', na=False)] ##보관 세탁
+filtered = df1[df1['문자내용'].str.contains('보관', na=False)] ##보관 세탁
 
 # 2) 수신번호별로 전송일자 리스트로 정리
 result = (

@@ -6,10 +6,10 @@ import datetime
 
 def Makedf():
     # 문자 발송 이력 데이터 불러오기 및 병합
-    df1 = pd.read_excel(r'C:\Users\WD\Downloads\data1.xlsx')
+    df1 = pd.read_excel(r'C:\Users\WD\Downloads\sms_sht58580.xlsx')
     filepaths = [
-        r'C:\Users\WD\Downloads\data2.xlsx',
-        r'C:\Users\WD\Downloads\data3.xlsx',
+        r'C:\Users\WD\Downloads\sms_sht58580 (1).xlsx',
+        r'C:\Users\WD\Downloads\sms_예약내역 다운로드_sht58580.xlsx',
         r'C:\Users\WD\Downloads\data4.xlsx',
         r'C:\Users\WD\Downloads\data5.xlsx'
     ]
